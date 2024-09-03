@@ -82,6 +82,6 @@ strings.
 2. The implementation does not protect against side-channel-attacks like timing attacks during 
    encryption or decryption, apart from the padding of the input, which also serves as obfuscation
    of how long the original string is.
-3. Writing down the secret strings is tedious and error-prone. It is recommeded to decrypt *from
+3. Writing down the secret strings is tedious and error-prone. It is recommended to decrypt *from
    paper* after copying. Also, make sure that you don't leave imprints on other pieces of paper 
    lying below the one you're writing to.
