@@ -1,3 +1,4 @@
+import binascii
 import argparse
 import getpass
 import math
@@ -77,10 +78,14 @@ def decryptFlow():
         nextString = input("Next encrypted string: ")
         if nextString == "":
             break
-        nextStringBytes = decodeAfterReadingFromPaper(nextString)
-        if len(encrypted) > 0 and len(nextStringBytes) != len(encrypted[0]):
-            print("All inputs must have same length. First input had length {}, current has length {}.".format(len(encrypted[0]), len(nextStringBytes)))
-            sys.exit(1)
+        try:
+            nextStringBytes = decodeAfterReadingFromPaper(nextString)
+            if len(encrypted) > 0 and len(nextStringBytes) != len(encrypted[0]):
+                raise binascii.Error()
+        except binascii.Error:
+            print("All inputs must have same length. First input had length {}, current has length {}. The current line is ignored.".format(len(encrypted[0]), len(nextStringBytes)))
+            continue
+
         encrypted += [nextStringBytes]
 
     if len(encrypted) < 2:
@@ -91,8 +96,22 @@ def decryptFlow():
     for encryptedRestBytes in encrypted[2:]:
         decrypted = decryptBytes(decrypted, encryptedRestBytes)
 
-    print("Your original was: ")
-    print(decrypted.decode("utf-8"))
+    print('---')
+    try :
+        decoded = decrypted.decode("utf-8")
+        print("Your original was: " + decoded)
+    except UnicodeDecodeError as e:
+        print("An error occured wile decoding your input: {}".format(e))
+        print("Double-check that you've entered the correct strings.")
+        print('---')
+        retry = input("You can try ignoring this and all other potential errors, but it will not give you your exact original input. But maybe it's close enough so that you remember it. Try ignoring errors? (Y/n)")
+        if not retry.lower() == "n":
+            try:
+                decoded = decrypted.decode("utf-8", "ignore")
+                print("Your original was probably close to: " + decoded)
+            except UnicodeDecodeError as e:
+                print("The string could still not be decoded. Double check that you have all inputs and that they are correct.")
+
 
 if __name__ == "__main__":
     try:
