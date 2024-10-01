@@ -4,7 +4,8 @@ import getpass
 import math
 import sys
 
-from lib.lib import encrypt, encryptBytes, decrypt, decryptBytes, encodeForWritingToPaper, decodeAfterReadingFromPaper
+from lib.exceptions import ValidationError
+from lib.protocol import decodeAndValidateB32, decryptAndDecodeUtf8, encodeBase32, utf8EncodeAndEncrypt
 
 DEFAULT_PAD_LENGTH = 50
 
@@ -52,22 +53,16 @@ def encryptFlow(outputCount):
         sys.exit(1)
 
     try: 
-        encrypted = encrypt(secret, paddedLength)
-        outputCount -= 1
-
-        while outputCount > 1:
-            newSecret = encrypted.pop()
-            encrypted = encrypted + encryptBytes(newSecret, paddedLength)
-            outputCount -= 1
-
+        encrypted = utf8EncodeAndEncrypt(secret, paddedLength, outputCount)
+        encoded = encodeBase32(encrypted)
     except e:
         print("Encryption failed")
         sys.exit(1)
 
     print("Write this to paper. It is a good idea to run a test-decryption after that to ensure no misspellings")
-    for string in encrypted: 
+    for string in encoded: 
         print("")
-        print(encodeForWritingToPaper(string))
+        print(string)
 
 
 def decryptFlow():
@@ -75,39 +70,38 @@ def decryptFlow():
 
     encrypted = []
     while True:
-        nextString = input("Next encrypted string: ")
-        if nextString == "":
-            break
         try:
-            nextStringBytes = decodeAfterReadingFromPaper(nextString)
-            if len(encrypted) > 0 and len(nextStringBytes) != len(encrypted[0]):
-                raise binascii.Error()
-        except binascii.Error:
-            print("All inputs must have same length. First input had length {}, current has length {}. The current line is ignored.".format(len(encrypted[0]), len(nextStringBytes)))
-            continue
+            nextString = input("Next encrypted string: ")
+            if nextString == "":
+                break
 
-        encrypted += [nextStringBytes]
+            encrypted = decodeAndValidateB32(nextString, encrypted)
+        except EOFError:
+            print("Received EOF. Exiting.")
+            sys.exit(0)
+        except binascii.Error:
+            print("This input doesn't have a valid base32 encoding. You probably have a spelling error somewhere. The current line is ignored")
+            continue
+        except ValidationError:
+            print("All inputs must have same length. The current line's length differs from the previous lines'. The current line is ignored.")
+            continue
 
     if len(encrypted) < 2:
         print("Must enter at least two strings")
         sys.exit(1)
 
-    decrypted = decryptBytes(encrypted[0], encrypted[1])
-    for encryptedRestBytes in encrypted[2:]:
-        decrypted = decryptBytes(decrypted, encryptedRestBytes)
-
     print('---')
     try :
-        decoded = decrypted.decode("utf-8")
+        decoded = decryptAndDecodeUtf8(encrypted, False)
         print("Your original was: " + decoded)
     except UnicodeDecodeError as e:
-        print("An error occured wile decoding your input: {}".format(e))
+        print("An error occured while decoding your input: {}".format(e))
         print("Double-check that you've entered the correct strings.")
         print('---')
         retry = input("You can try ignoring this and all other potential errors, but it will not give you your exact original input. But maybe it's close enough so that you remember it. Try ignoring errors? (Y/n)")
         if not retry.lower() == "n":
             try:
-                decoded = decrypted.decode("utf-8", "ignore")
+                decoded = decryptAndDecodeUtf8(encrypted, True)
                 print("Your original was probably close to: " + decoded)
             except UnicodeDecodeError as e:
                 print("The string could still not be decoded. Double check that you have all inputs and that they are correct.")
