@@ -4,8 +4,8 @@ import getpass
 import math
 import sys
 
-from lib.exceptions import ValidationError
-from lib.protocol import decodeAndValidateB32, decryptAndDecodeUtf8, encodeBase32, utf8EncodeAndEncrypt
+from lib.exceptions import PreconditionError, ValidationError
+from lib.protocol import EncryptionProtocol, DecryptionProtocol
 
 DEFAULT_PAD_LENGTH = 50
 
@@ -53,8 +53,9 @@ def encryptFlow(outputCount):
         sys.exit(1)
 
     try: 
-        encrypted = utf8EncodeAndEncrypt(secret, paddedLength, outputCount)
-        encoded = encodeBase32(encrypted)
+        protocol = EncryptionProtocol(paddedLength, outputCount)
+        encrypted = protocol.encrypt(secret)
+        encoded = protocol.encodeBase32(encrypted)
     except e:
         print("Encryption failed")
         sys.exit(1)
@@ -68,14 +69,14 @@ def encryptFlow(outputCount):
 def decryptFlow():
     print("Please enter the encrypted strings line by line. Confirm with an empty line.")
 
-    encrypted = []
+    protocol = DecryptionProtocol()
     while True:
         try:
             nextString = input("Next encrypted string: ")
             if nextString == "":
                 break
 
-            encrypted = decodeAndValidateB32(nextString, encrypted)
+            protocol.decodeBase32AndStore(nextString)
         except EOFError:
             print("Received EOF. Exiting.")
             sys.exit(0)
@@ -86,14 +87,13 @@ def decryptFlow():
             print("All inputs must have same length. The current line's length differs from the previous lines'. The current line is ignored.")
             continue
 
-    if len(encrypted) < 2:
-        print("Must enter at least two strings")
-        sys.exit(1)
-
     print('---')
     try :
-        decoded = decryptAndDecodeUtf8(encrypted, False)
+        decoded = protocol.decrypt(False)
         print("Your original was: " + decoded)
+    except PreconditionError:
+        print("Must enter at least two strings")
+        sys.exit(1)
     except UnicodeDecodeError as e:
         print("An error occured while decoding your input: {}".format(e))
         print("Double-check that you've entered the correct strings.")
@@ -101,7 +101,7 @@ def decryptFlow():
         retry = input("You can try ignoring this and all other potential errors, but it will not give you your exact original input. But maybe it's close enough so that you remember it. Try ignoring errors? (Y/n)")
         if not retry.lower() == "n":
             try:
-                decoded = decryptAndDecodeUtf8(encrypted, True)
+                decoded = protocol.decrypt(True)
                 print("Your original was probably close to: " + decoded)
             except UnicodeDecodeError as e:
                 print("The string could still not be decoded. Double check that you have all inputs and that they are correct.")

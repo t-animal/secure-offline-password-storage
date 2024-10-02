@@ -1,57 +1,114 @@
+import copy
 import unittest
-from unittest.mock import call, patch
+from unittest.mock import ANY, call, patch
 
-from lib.exceptions import ValidationError
-from lib.protocol import encodeBase32, decodeAndValidateB32, decryptAndDecodeUtf8, utf8EncodeAndEncrypt
+from lib.exceptions import PreconditionError, ValidationError
+from lib.protocol import DecryptionProtocol, EncryptionProtocol
 
-class TestEncryption(unittest.TestCase):
+theQuickBrownFoxB32="KRUG KIDR OVUW G2ZA MJZG 653O EBTG 66A="
+jumpsOverTheLazyDogB32="NJ2W 24DT EBXX MZLS EB2G QZJA NRQX U6I="
+
+class TestEncryptProtocol(unittest.TestCase):
+
+	def test_outputCount(self):
+		protocol = EncryptionProtocol(paddedLength = 10, desiredOutputCount = 7)
+
+		encrypted = protocol.encrypt("asdf")
+		
+		self.assertEqual(len(encrypted), 7)
+		with self.assertRaises(PreconditionError):
+			EncryptionProtocol(paddedLength = 10, desiredOutputCount = 1)
+
+	def test_padding(self):
+		protocol = EncryptionProtocol(paddedLength = 10, desiredOutputCount = 2)
+
+		encryptedAscii = protocol.encrypt("123")
+		encryptedUtf8 = protocol.encrypt("äbc")
+
+		self.assertEqual(len(encryptedAscii[0]), 10)
+		self.assertEqual(len(encryptedAscii[1]), 10)
+		self.assertEqual(len(encryptedUtf8[0]), 10)
+		self.assertEqual(len(encryptedUtf8[1]), 10)
+
 	@patch('lib.protocol.encryptBytes')
-	def test_encrypt(self, mock_encrypt_bytes):
-		mock_encrypt_bytes.side_effect = [[b'12345', b'98765'], [b'asdfe', b'zyxwv'], [b'hjklm', b'qwerty']]
+	def test_encrypt(self, mock_encryptBytes):
+		mockEncryptResult=[[b'12345', b'98765'], [b'asdfe', b'zyxwv'], [b'hjklm', b'qwerty']]
+		mock_encryptBytes.side_effect = copy.deepcopy(mockEncryptResult)
 
-		result = utf8EncodeAndEncrypt("abc", 5, 4)
+		protocol = EncryptionProtocol(paddedLength = 5, desiredOutputCount = 4)
+
+		result = protocol.encrypt("abc")
 		
-		self.assertEqual(mock_encrypt_bytes.mock_calls, [call(b'abc', 5), call(b'98765', 5), call(b'zyxwv', 5)])
-		self.assertEqual(result, [b'12345', b'asdfe', b'hjklm', b'qwerty'])
+		mock_encryptBytes.assert_has_calls([
+			call(b'abc', 5),
+			call(mockEncryptResult[0][1], 5),
+			call(mockEncryptResult[1][1], 5)
+		])
+		self.assertEqual(result, [mockEncryptResult[0][0], mockEncryptResult[1][0], *mockEncryptResult[2]])
 
-	@patch('lib.protocol.decryptBytes')
-	def test_decrypt(self, mock_decrypt_bytes):
-		mock_decrypt_bytes.side_effect = [b'zyxwv', b'98765', b'abc  ']
-
-		result = decryptAndDecodeUtf8([b'12345', b'asdfe', b'hjklm', b'qwerty'], False)
-		
-		self.assertEqual(mock_decrypt_bytes.mock_calls, [call(b'12345', b'asdfe'), call(b'zyxwv', b'hjklm'), call(b'98765', b'qwerty')])
-		self.assertEqual(result, "abc  ")
-
-	@patch('lib.protocol.decryptBytes')
-	def test_decryptEncodingFailure(self, mock_decrypt_bytes):
-		mock_decrypt_bytes.return_value = b'ab\xFF  '
-
-		with self.assertRaises(UnicodeDecodeError):
-			decryptAndDecodeUtf8([b'12345', b'asdfe'], False)
-
-		result = decryptAndDecodeUtf8([b'12345', b'asdfe'], True)
-		self.assertEqual(result, "ab�  ")
-
-
-class TestEncoding(unittest.TestCase):
 	def test_encodeBase32(self):
+		protocol = EncryptionProtocol(paddedLength = 5, desiredOutputCount = 4)
 		input = [b"The quick brown fox", b"jumps over the lazy"]
 
-		result = encodeBase32(input)
+		result = protocol.encodeBase32(input)
 
-		self.assertEqual(result, ["KRUG KIDR OVUW G2ZA MJZG 653O EBTG 66A=", "NJ2W 24DT EBXX MZLS EB2G QZJA NRQX U6I="])
+		self.assertEqual(result, [theQuickBrownFoxB32, jumpsOverTheLazyDogB32])
 
-	def test_decodeAndValidateB32(self):
-		input1 = "KRUG KIDR OVUW G2ZA MJZG 653O EBTG 66A="
-		input2 = "NJ2W 24DT EBXX MZLS EB2G QZJA NRQX U6I="
+class TestDecryptProtocol(unittest.TestCase):
+
+	@patch('lib.protocol.decryptBytes')
+	def test_decrypt(self, mock_decryptBytes):
+		protocol = DecryptionProtocol()
+
+		mockEncryptResult = [b'zyxwv', b'98765', b'abc  ']
+		mock_decryptBytes.side_effect = mockEncryptResult
+
+		protocol.decodeBase32AndStore('KRUG KIDR')
+		protocol.decodeBase32AndStore('OVUW G2ZA')
+		protocol.decodeBase32AndStore('MJZG 653O')
+		protocol.decodeBase32AndStore('EBTG 66BA')
+		result = protocol.decrypt(ignoreUtf8EncodingErrors = False)
+		
+		mock_decryptBytes.assert_has_calls([
+			call(b'The q', b'uick '),
+			call(mockEncryptResult[0], b'brown'),
+			call(mockEncryptResult[1], b' fox ')
+		])
+		self.assertEqual(result, "abc  ")
+
+	def test_decryptTooFewInputs(self):
+		protocol = DecryptionProtocol()
+		protocol.decodeBase32AndStore('KRUG KIDR')
+
+		with self.assertRaises(PreconditionError):
+			protocol.decrypt(ignoreUtf8EncodingErrors = False)
+
+	def test_decodeBase32(self):
+		protocol = DecryptionProtocol()
+
+		input1 = theQuickBrownFoxB32
+		input2 = jumpsOverTheLazyDogB32
 		input3 = "MRXW OLQ="
 
-		result1 = decodeAndValidateB32(input1, [])
-		self.assertEqual(result1, [b"The quick brown fox"])
+		protocol.decodeBase32AndStore(input1)
+		self.assertEqual(protocol.encryptedBytes[0], b"The quick brown fox")
 
-		result2 = decodeAndValidateB32(input2, result1)
-		self.assertEqual(result2, [b"The quick brown fox", b"jumps over the lazy"])
+		protocol.decodeBase32AndStore(input2)
+		self.assertEqual(protocol.encryptedBytes[1], b"jumps over the lazy")
 
 		with self.assertRaises(ValidationError):
-			decodeAndValidateB32(input3, result2)
+			protocol.decodeBase32AndStore(input3)
+
+	@patch('lib.protocol.decryptBytes')
+	def test_decryptEncodingFailure(self, mock_decryptBytes):
+		protocol = DecryptionProtocol()
+		protocol.decodeBase32AndStore("KRUG KIDR")
+		protocol.decodeBase32AndStore("NJ2W 24DT")
+
+		mock_decryptBytes.return_value = b'ab\xFF  '
+
+		with self.assertRaises(UnicodeDecodeError):
+			protocol.decrypt(ignoreUtf8EncodingErrors = False)
+
+		result = protocol.decrypt(ignoreUtf8EncodingErrors = True)
+		self.assertEqual(result, "ab�  ")
