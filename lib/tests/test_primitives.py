@@ -7,10 +7,10 @@ from lib.primitives import decryptBytes, encryptBytes, xorTuple
 
 class TestEncryption(unittest.TestCase):
 	def test_xorTuple(self):
-		xored0From00 = xorTuple([0,0])
-		xored0From11 = xorTuple([1,1])
-		xored3From12 = xorTuple([1,2])
-		xored3From21 = xorTuple([2,1])
+		xored0From00 = xorTuple((0,0))
+		xored0From11 = xorTuple((1,1))
+		xored3From12 = xorTuple((1,2))
+		xored3From21 = xorTuple((2,1))
 
 		self.assertEqual(xored0From00, 0)
 		self.assertEqual(xored0From11, 0)
@@ -22,13 +22,13 @@ class TestEncryption(unittest.TestCase):
 		mock_token_bytes.return_value = b'abcde'
 
 		encrypted = encryptBytes(b"abcde", 5)
-		self.assertEqual(encrypted, [b'abcde', bytes([0]*5)])
+		self.assertEqual(encrypted, (b'abcde', bytes([0]*5)))
 
 		encrypted = encryptBytes(b"bcdef", 5)
-		self.assertEqual(encrypted, [b'abcde', bytes([ord('a')^ord('b'), ord('b')^ord('c'), ord('c')^ord('d'), ord('d')^ord('e'), ord('e')^ord('f')])])
+		self.assertEqual(encrypted, (b'abcde', bytes([ord('a')^ord('b'), ord('b')^ord('c'), ord('c')^ord('d'), ord('d')^ord('e'), ord('e')^ord('f')])))
 
 		encrypted = encryptBytes(b"abc", 5)
-		self.assertEqual(encrypted, [b'abcde', bytes([0]*3 + [ord('D'), ord('E')])]) # xor with ' ' shifts case
+		self.assertEqual(encrypted, (b'abcde', bytes([0]*3 + [ord('D'), ord('E')]))) # xor with ' ' shifts cae
 
 	def test_encrypt(self):
 		testInput = b"123"

@@ -29,7 +29,7 @@ def main():
     else:
         parser.print_help()
 
-def encryptFlow(outputCount):
+def encryptFlow(outputCount: int):
     if outputCount < 2:
         print("Output count must be at least 2")
         sys.exit(1)
