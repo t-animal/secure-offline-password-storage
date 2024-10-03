@@ -4,8 +4,8 @@ import getpass
 import math
 import sys
 
-from lib.exceptions import PreconditionError, ValidationError
-from lib.protocol import EncryptionProtocol, DecryptionProtocol
+from src.exceptions import PreconditionError, ValidationError
+from src.protocol import EncryptionProtocol, DecryptionProtocol
 
 DEFAULT_PAD_LENGTH = 50
 

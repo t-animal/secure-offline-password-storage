@@ -2,8 +2,8 @@ import unittest
 from unittest.mock import patch
 import secrets
 
-from lib.exceptions import PreconditionError
-from lib.primitives import decryptBytes, encryptBytes, xorTuple
+from src.exceptions import PreconditionError
+from src.primitives import decryptBytes, encryptBytes, xorTuple
 
 class TestEncryption(unittest.TestCase):
 	def test_xorTuple(self):

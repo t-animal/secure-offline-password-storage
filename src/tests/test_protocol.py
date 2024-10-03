@@ -2,8 +2,8 @@ import copy
 import unittest
 from unittest.mock import ANY, call, patch
 
-from lib.exceptions import PreconditionError, ValidationError
-from lib.protocol import DecryptionProtocol, EncryptionProtocol
+from src.exceptions import PreconditionError, ValidationError
+from src.protocol import DecryptionProtocol, EncryptionProtocol
 
 theQuickBrownFoxB32="KRUG KIDR OVUW G2ZA MJZG 653O EBTG 66A="
 jumpsOverTheLazyDogB32="NJ2W 24DT EBXX MZLS EB2G QZJA NRQX U6I="
@@ -30,7 +30,7 @@ class TestEncryptProtocol(unittest.TestCase):
 		self.assertEqual(len(encryptedUtf8[0]), 10)
 		self.assertEqual(len(encryptedUtf8[1]), 10)
 
-	@patch('lib.protocol.encryptBytes')
+	@patch('src.protocol.encryptBytes')
 	def test_encrypt(self, mock_encryptBytes):
 		mockEncryptResult=[[b'12345', b'98765'], [b'asdfe', b'zyxwv'], [b'hjklm', b'qwerty']]
 		mock_encryptBytes.side_effect = copy.deepcopy(mockEncryptResult)
@@ -56,7 +56,7 @@ class TestEncryptProtocol(unittest.TestCase):
 
 class TestDecryptProtocol(unittest.TestCase):
 
-	@patch('lib.protocol.decryptBytes')
+	@patch('src.protocol.decryptBytes')
 	def test_decrypt(self, mock_decryptBytes):
 		protocol = DecryptionProtocol()
 
@@ -99,7 +99,7 @@ class TestDecryptProtocol(unittest.TestCase):
 		with self.assertRaises(ValidationError):
 			protocol.decodeBase32AndStore(input3)
 
-	@patch('lib.protocol.decryptBytes')
+	@patch('src.protocol.decryptBytes')
 	def test_decryptEncodingFailure(self, mock_decryptBytes):
 		protocol = DecryptionProtocol()
 		protocol.decodeBase32AndStore("KRUG KIDR")
