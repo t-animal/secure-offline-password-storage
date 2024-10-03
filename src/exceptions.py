@@ -1,6 +1,7 @@
+"""Exceptions for this application"""
 
 class ValidationError(Exception):
-    pass
+    """Indicates that an input could not be validated (e.g. it has the wrong format)"""
 
 class PreconditionError(Exception):
-    pass
+    """Indicates that another action must be taken before the current one"""
