@@ -1,14 +1,17 @@
 # Secure Offline Password Storage
+If you've ever found yourself sitting at your keyboard, unable to 
+remember a password and feeling panicked, this project is for you.
 
-If you have ever sat before your keyboard, not remembering your password and panicking, this project
-is for you.
-
-This tool encrypts a password using a one-time-pad multiple times. It then returns all the secrets
-and the encrypted value in base32 encoded strings. These strings can be copied manually (or printed,
-but beware of potential security flaws, see below) to a piece of paper. Each string can be stored 
-in a different location. Only all strings together, when re-entered into the application, can be
-combined to the original input. If any paper is lost or destroyed, the secret has been wiped. This
-makes it useful for storing passwords securely offline.
+This tool encrypts a password using a one-time-pad multiple times. It
+then outputs the encryption in the form of base32-encoded strings,
+along with the secrets used. These strings can be manually copied (or
+printed, but see
+[the security warning below](#Notes-on-Printing-and-Paper)) and stored
+on paper. Each string can be stored in a separate location. The
+original input can only be recovered if all the strings are re-entered
+into the application. If any of the papers are lost or destroyed, the
+secret is permanently wiped. This makes the tool ideal for securely
+storing passwords offline.
 
 ## Example usage
 ```
@@ -52,36 +55,43 @@ Your original was:
 secret
 ```
 
-## A note on printing and paper
+## Notes on Printing and Paper
 
-While you could print the strings on a piece of paper, with printers these days the printed document
-could pass several machines not under your control or the printer might even ahve some internal 
-storage or whatnot. In any case, it's wise not to print the generated strings. Additional caution
-should be taken when choosing the paper and pen.
-For more info consult the excellent information at
+While you could print the strings on paper, modern printers may pass
+the printed document through various systems outside your control.
+Some printers even have internal storage. As a result, it's generally
+more secure not to print the generated strings and resort to writing
+by hand. Consider taking extra precautions when selecting paper and
+pen for writing down your secrets. For more information, see the
+excellent guide at:
 https://github.com/cyphar/paperback?tab=readme-ov-file#paper-choices-and-storage
 
 
-## Related projects and the why?!
+## Related Projects and Motivation
+Many related projects use Shamir's Secret Sharing. The most notable is
+[paperback](https://github.com/cyphar/paperback). While paperback is
+excellent, it is not quite finished yet. Another problem is that its
+algorithm and internal workings are less transparent compared to this
+project. If you ever lost this implementation, you could still
+manually recover the paper slips and undo the encryption by hand.
 
-Related projects often use shamir secret share. The most notable project certainly is
-[paperback](https://github.com/cyphar/paperback). If it were in a completed state I would consider 
-using it. However, its algorithm and innner workings are not as easily understandable as with this
-project. If all goes wrong, you could still recover all the paper slips and undo the encryption by
-hand. It's also so little code it can be easily reviewed by anyone familiar with python (and I
-welcome feedback). Of course, this project has the huge drawback of much more manual effort for 
-writing down and confirming the written down paper slips. However, since this is a disaster-recovery
-mechanism, it's likely you don't have to do it often (or, if you do, you likely have other problems)
-and distributing and recovering the paper slips is the bigger effort to writing down the secret
-strings.
+This project is small and easily reviewable for anyone familiar with
+Python (feedback is welcome). It does require more manual effort to
+write down and verify the paper slips, but since it's designed for
+disaster recovery, you hopefully won’t need to do this often. If
+frequent, you might have other underlying issues. Distributing and
+recovering the paper slips will likely be a bigger challenge than
+writing down the secret strings.
 
-## Known problems
+## Known Issues
 
-1. This ships its own one-time-pad implementation and even though this is a very simple algorithm, 
-   mistakes can always happen. I'm very open to feedback.
-2. The implementation does not protect against side-channel-attacks like timing attacks during 
-   encryption or decryption, apart from the padding of the input, which also serves as obfuscation
-   of how long the original string is.
-3. Writing down the secret strings is tedious and error-prone. It is recommended to decrypt *from
-   paper* after copying. Also, make sure that you don't leave imprints on other pieces of paper 
-   lying below the one you're writing to.
+1. This project includes its own one-time pad implementation.
+   Although it's a simple algorithm, mistakes can always happen.
+   I'm open to feedback.
+2. The implementation doesn't protect against side-channel attacks
+   like timing attacks during encryption or decryption, except for
+   padding the input to obscure the original string's length.
+3. Writing down the secret strings can be tedious and prone to error.
+   It’s recommended to test the decryption process *from the written
+   paper* to ensure accuracy. Also, ensure you don’t leave imprints
+   on paper sheets underneath the one you're writing on.
