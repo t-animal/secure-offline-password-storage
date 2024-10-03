@@ -95,3 +95,7 @@ writing down the secret strings.
    It’s recommended to test the decryption process *from the written
    paper* to ensure accuracy. Also, ensure you don’t leave imprints
    on paper sheets underneath the one you're writing on.
+
+## Dependencies
+No dependencies are needed for running the code, except python >3.9.
+For development, mypy and pylint are needed.
