@@ -12,7 +12,7 @@ makes it useful for storing passwords securely offline.
 
 ## Example usage
 ```
-> python main.py --help
+> ./main.py --help
 usage: main.py [-h] {encrypt,decrypt} ...
 
 Encrypt or decrypt a string using one-time-pad for secure storage
@@ -27,7 +27,7 @@ options:
 ```
 
 ```
-> python main.py encrypt 3 
+> ./main.py encrypt 3 
 Will create 3 output strings for you to write down
 Please enter the secret string:
 To increase security, you can add whitespace to the input to obfuscate the length of the secret string. What length should the output have? Defaults to 50 (your input has 6 bytes)10
@@ -42,7 +42,7 @@ PKAB BNKO JFIY G2E3
 ```
 
 ```
-> python main.py decrypt
+> ./main.py decrypt
 Please enter the encrypted strings line by line. Confirm with an empty line.
 Next encrypted string: 5MWZ NQQP O6I3 WN6J
 Next encrypted string: PKAB BNKO JFIY G2E3
