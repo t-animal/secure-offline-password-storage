@@ -5,7 +5,7 @@ using randomly chosen one-time-pad
 
 import secrets
 
-from .exceptions import PreconditionError
+from src.exceptions import PreconditionError
 
 
 def xor_tuple(x: tuple[int, int]) -> int:

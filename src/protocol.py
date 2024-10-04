@@ -2,8 +2,8 @@
 import base64
 import re
 
-from .exceptions import PreconditionError, ValidationError
-from .primitives import encrypt_bytes, decrypt_bytes
+from src.exceptions import PreconditionError, ValidationError
+from src.primitives import encrypt_bytes, decrypt_bytes
 
 class EncryptionProtocol:
     """
